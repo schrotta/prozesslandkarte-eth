@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prozesslandkarte Lehrbetrieb ETH Zürich</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-50:  #E6F1FB;
+    --blue-100: #B5D4F4;
+    --blue-600: #185FA5;
+    --blue-800: #0C447C;
+    --green-50:  #EAF3DE;
+    --green-100: #C0DD97;
+    --green-600: #3B6D11;
+    --green-800: #27500A;
+    --amber-50:  #FAEEDA;
+    --amber-100: #FAC775;
+    --amber-600: #854F0B;
+    --amber-800: #633806;
+    --gray-50:  #F1EFE8;
+    --gray-200: #B4B2A9;
+    --gray-600: #5F5E5A;
+    --gray-800: #444441;
+    --teal-50:  #E1F5EE;
+    --teal-600: #0F6E56;
+    --teal-800: #085041;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f5f4f0;
+    color: #2c2c2a;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 20px;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .page-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c2c2a;
+    letter-spacing: -.01em;
+  }
+  .page-subtitle {
+    font-size: 12px;
+    color: #888780;
+    margin-top: 2px;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: #5f5e5a;
+    align-items: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .dot-plan  { background: var(--blue-100);  border: 1.5px solid var(--blue-600); }
+  .dot-core  { background: var(--green-100); border: 1.5px solid var(--green-600); }
+  .dot-supp  { background: var(--amber-100); border: 1.5px solid var(--amber-600); }
+
+  /* ── Info bar ── */
+  .info-bar {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    background: var(--blue-50); border: 0.5px solid var(--blue-100);
+    border-radius: var(--radius-md); padding: 9px 14px;
+    margin-bottom: 18px; font-size: 11px; color: var(--blue-800);
+  }
+  .info-bar a { color: var(--blue-600); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+  .info-bar a:hover { text-decoration: underline; }
+  .info-bar .sep { color: var(--blue-100); }
+  .info-label { font-weight: 600; flex-shrink: 0; }
+
+  /* ── Level sections ── */
+  .level { margin-bottom: 14px; }
+  .level-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #888780;
+    margin-bottom: 7px;
+    padding-left: 2px;
+  }
+
+  /* ── Grids ── */
+  .grid { display: grid; gap: 8px; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-8 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 800px) { .grid-4, .grid-8 { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 500px) { .grid-4, .grid-8 { grid-template-columns: 1fr; } }
+
+  /* ── Process cards ── */
+  .proc-card {
+    background: #fff;
+    border: 0.5px solid #d3d1c7;
+    border-radius: var(--radius-lg);
+    padding: 11px 13px 10px;
+    cursor: pointer;
+    transition: border-color .14s, box-shadow .14s, transform .1s;
+    position: relative;
+    user-select: none;
+  }
+  .proc-card:hover {
+    border-color: #b4b2a9;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    transform: translateY(-1px);
+  }
+  .proc-card.active {
+    border-color: #185FA5;
+    box-shadow: 0 0 0 2px rgba(24,95,165,.18);
+  }
+  .proc-card:focus-visible { outline: 2px solid #185FA5; outline-offset: 2px; }
+
+  .badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    letter-spacing: .03em;
+  }
+  .badge-plan { background: var(--blue-50);  color: var(--blue-800); }
+  .badge-core { background: var(--green-50); color: var(--green-800); }
+  .badge-supp { background: var(--amber-50); color: var(--amber-800); }
+
+  .proc-card h3 {
+    font-size: 12px;
+    font-weight: 600;
+    color: #2c2c2a;
+    line-height: 1.35;
+    margin-bottom: 3px;
+  }
+  .proc-card p {
+    font-size: 11px;
+    color: #888780;
+    line-height: 1.4;
+  }
+  .doc-count {
+    font-size: 10px;
+    color: #b4b2a9;
+    margin-top: 7px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .doc-count svg { flex-shrink: 0; }
+
+  /* ── Detail panel ── */
+  .detail-panel {
+    background: #fff;
+    border: 0.5px solid #b4b2a9;
+    border-radius: var(--radius-lg);
+    padding: 18px 22px;
+    margin-top: 12px;
+    display: none;
+    animation: slideIn .18s ease;
+  }
+  .detail-panel.open { display: block; }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+
+  .dp-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    gap: 12px;
+  }
+  .dp-header h2 { font-size: 15px; font-weight: 600; color: #2c2c2a; }
+  .close-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 20px; line-height: 1; color: #888780;
+    padding: 0; flex-shrink: 0; margin-top: -2px;
+  }
+  .close-btn:hover { color: #2c2c2a; }
+  .dp-desc { font-size: 12px; color: #5f5e5a; margin-bottom: 16px; line-height: 1.55; }
+
+  /* Doc sections */
+  .doc-sections { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+  @media (max-width: 700px) { .doc-sections { grid-template-columns: 1fr; } }
+
+  .doc-section { }
+  .doc-section-title {
+    font-size: 10px; font-weight: 600; letter-spacing: .05em;
+    text-transform: uppercase; color: #888780;
+    margin-bottom: 7px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .doc-list { display: flex; flex-direction: column; gap: 4px; }
+
+  .doc-item {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11px; padding: 6px 9px;
+    border-radius: 6px; background: #f5f4f0;
+    color: #2c2c2a; text-decoration: none;
+    border: 0.5px solid transparent;
+    transition: border-color .12s;
+    cursor: pointer;
+  }
+  .doc-item:hover { border-color: #d3d1c7; }
+  .doc-item .doc-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .source-tag {
+    font-size: 9px; padding: 1px 6px;
+    border-radius: 3px; flex-shrink: 0;
+    font-weight: 600;
+  }
+  .src-conf  { background: var(--blue-50);  color: var(--blue-800); }
+  .src-sp    { background: var(--amber-50); color: var(--amber-800); }
+  .src-drive { background: var(--green-50); color: var(--green-800); }
+
+  .empty-hint {
+    font-size: 11px; color: #b4b2a9;
+    padding: 5px 2px; font-style: italic;
+  }
+
+  /* Add doc row */
+  .add-row {
+    display: flex; gap: 6px; margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .add-row input {
+    flex: 1; min-width: 160px;
+    font-size: 12px; padding: 6px 10px;
+    border: 0.5px solid #d3d1c7; border-radius: 6px;
+    background: #fff; color: #2c2c2a;
+    font-family: inherit;
+  }
+  .add-row input:focus { outline: 2px solid #185FA5; outline-offset: 0; border-color: transparent; }
+  .add-row select {
+    font-size: 12px; padding: 6px 8px;
+    border: 0.5px solid #d3d1c7; border-radius: 6px;
+    background: #fff; color: #2c2c2a;
+    font-family: inherit; cursor: pointer;
+  }
+  .btn-add {
+    font-size: 12px; padding: 6px 13px;
+    border: 0.5px solid #d3d1c7; border-radius: 6px;
+    background: #fff; color: #2c2c2a;
+    cursor: pointer; font-family: inherit;
+    white-space: nowrap; transition: background .12s;
+  }
+  .btn-add:hover { background: #f5f4f0; }
+
+  /* Hint box */
+  .hint-box {
+    margin-top: 12px; padding: 9px 12px;
+    border-radius: 6px; background: var(--blue-50);
+    font-size: 11px; color: var(--blue-800);
+    line-height: 1.55; border: 0.5px solid var(--blue-100);
+  }
+  .hint-box code {
+    background: rgba(24,95,165,.12); border-radius: 3px;
+    padding: 0 4px; font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <div class="page-title">Prozesslandkarte Lehrbetrieb ETH Zürich</div>
+    <div class="page-subtitle">Klick auf einen Prozess → verknüpfte Materialien anzeigen</div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot dot-plan"></div> Führungs- & Planungsprozesse</div>
+    <div class="legend-item"><div class="legend-dot dot-core"></div> Kernprozesse (Student Life Cycle)</div>
+    <div class="legend-item"><div class="legend-dot dot-supp"></div> Unterstützende Prozesse</div>
+  </div>
+</div>
+
+<!-- Info bar -->
+<div class="info-bar">
+  <span class="info-label">📁 Ablageort:</span>
+  <a href="https://ethz.sharepoint.com/:f:/r/sites/PRO-AKDI-00003308/Freigegebene%20Dokumente/General/07%20Prozesslandkarte%20ETH%20Lehrbetrieb?csf=1&web=1&e=1Ax2GW" target="_blank" rel="noopener">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+    07 Prozesslandkarte ETH Lehrbetrieb
+  </a>
+  <span class="sep">|</span>
+  <a href="https://ethz.sharepoint.com/:u:/r/sites/PRO-AKDI-00003308/Freigegebene%20Dokumente/General/07%20Prozesslandkarte%20ETH%20Lehrbetrieb/prozesslandkarte_interaktiv.html?csf=1&web=1&e=7GeQdf" target="_blank" rel="noopener">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    Interaktive Karte direkt öffnen
+  </a>
+</div>
+
+<!-- Ebene 1 -->
+<div class="level">
+  <div class="level-label">Ebene 1 · Führungs- & Planungsprozesse</div>
+  <div class="grid grid-4">
+    <div class="proc-card" tabindex="0" onclick="toggle('rechtsetzung')" onkeydown="kd(event,'rechtsetzung')">
+      <span class="badge badge-plan">Planung</span>
+      <h3>Rechtsetzung & Studiengangentwicklung</h3>
+      <p>Reglemente, Studienordnungen, Akkreditierung</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-rechtsetzung">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('lerneinheiten')" onkeydown="kd(event,'lerneinheiten')">
+      <span class="badge badge-plan">Planung</span>
+      <h3>Lerneinheiten & Prüfungsinformationen</h3>
+      <p>Kurskatalog, Modulbeschreibungen, Credits</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-lerneinheiten">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('stundenplanung')" onkeydown="kd(event,'stundenplanung')">
+      <span class="badge badge-plan">Planung</span>
+      <h3>Stundenplanung & Vorlesungsverzeichnis</h3>
+      <p>Raumbelegung, Semesterkalender</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-stundenplanung">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('pruefungsplanung')" onkeydown="kd(event,'pruefungsplanung')">
+      <span class="badge badge-plan">Planung</span>
+      <h3>Prüfungsplanung & Organisation</h3>
+      <p>Prüfungsdaten, Räume, Aufsichten</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-pruefungsplanung">0 Dokumente</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Ebene 2 -->
+<div class="level">
+  <div class="level-label">Ebene 2 · Kernprozesse (Student Life Cycle)</div>
+  <div class="grid grid-4">
+    <div class="proc-card" tabindex="0" onclick="toggle('zulassung')" onkeydown="kd(event,'zulassung')">
+      <span class="badge badge-core">Phase A</span>
+      <h3>Bewerbung & Zulassung</h3>
+      <p>Bewerbungsportal, Zulassungsentscheid, Beratung</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-zulassung">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('immatrikulation')" onkeydown="kd(event,'immatrikulation')">
+      <span class="badge badge-core">Phase B</span>
+      <h3>Immatrikulation & Onboarding</h3>
+      <p>Einschreibung, Personaldossier, Gebühren</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-immatrikulation">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('studienbetrieb')" onkeydown="kd(event,'studienbetrieb')">
+      <span class="badge badge-core">Phase C</span>
+      <h3>Aktive Studienphase</h3>
+      <p>Belegung, Leistungsnachweise, Mobilität, Stipendien</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-studienbetrieb">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('abschluss')" onkeydown="kd(event,'abschluss')">
+      <span class="badge badge-core">Phase D</span>
+      <h3>Abschluss & Austritt</h3>
+      <p>Abschlussarbeiten, Exmatrikulation, Alumni</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-abschluss">0 Dokumente</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Ebene 3 -->
+<div class="level">
+  <div class="level-label">Ebene 3 · Unterstützende Prozesse</div>
+  <div class="grid grid-8">
+    <div class="proc-card" tabindex="0" onclick="toggle('raum')" onkeydown="kd(event,'raum')">
+      <span class="badge badge-supp">Support</span>
+      <h3>Raumverwaltung</h3>
+      <p>Buchungen, Kapazitäten</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-raum">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('dozierende')" onkeydown="kd(event,'dozierende')">
+      <span class="badge badge-supp">Support</span>
+      <h3>Dozierendenverwaltung</h3>
+      <p>Lehraufträge, Verträge</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-dozierende">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('identitaet')" onkeydown="kd(event,'identitaet')">
+      <span class="badge badge-supp">Support</span>
+      <h3>Identitäts- & Berechtigungsmanagement</h3>
+      <p>Personen-IDs, Rollen, Zugänge</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-identitaet">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('daten')" onkeydown="kd(event,'daten')">
+      <span class="badge badge-supp">Support</span>
+      <h3>Datenmanagement & Archivierung</h3>
+      <p>Historisierung, Statistiken, Langzeitarchiv</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-daten">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('reporting')" onkeydown="kd(event,'reporting')">
+      <span class="badge badge-supp">Support</span>
+      <h3>Reporting & Statistik</h3>
+      <p>BFS-Daten, Dashboards</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-reporting">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('komm')" onkeydown="kd(event,'komm')">
+      <span class="badge badge-supp">Support</span>
+      <h3>Systemkommunikation</h3>
+      <p>Push-Nachrichten, E-Mail-Vorlagen</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-komm">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('signaturen')" onkeydown="kd(event,'signaturen')">
+      <span class="badge badge-supp">Support</span>
+      <h3>Digitale Signaturen & Bescheinigungen</h3>
+      <p>Verifiable Credentials, Diplome</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-signaturen">0 Dokumente</span></div>
+    </div>
+    <div class="proc-card" tabindex="0" onclick="toggle('support')" onkeydown="kd(event,'support')">
+      <span class="badge badge-supp">Support</span>
+      <h3>Anwender-Support</h3>
+      <p>Helpdesk, Schulungen, FAQs</p>
+      <div class="doc-count"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="cnt-support">0 Dokumente</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detail-panel" role="region" aria-live="polite">
+  <div class="dp-header">
+    <h2 id="dp-title"></h2>
+    <button class="close-btn" onclick="closePanel()" aria-label="Schliessen">×</button>
+  </div>
+  <p class="dp-desc" id="dp-desc"></p>
+
+  <div class="doc-sections">
+    <div class="doc-section">
+      <div class="doc-section-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Confluence
+      </div>
+      <div class="doc-list" id="dp-conf-list"></div>
+    </div>
+    <div class="doc-section">
+      <div class="doc-section-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+        SharePoint
+      </div>
+      <div class="doc-list" id="dp-sp-list"></div>
+    </div>
+    <div class="doc-section">
+      <div class="doc-section-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        Netzlaufwerk
+      </div>
+      <div class="doc-list" id="dp-drive-list"></div>
+    </div>
+  </div>
+
+  <div class="add-row">
+    <input type="text" id="new-doc-name" placeholder="Dokumentname oder Link einfügen …" aria-label="Dokumentname" />
+    <select id="new-doc-source" aria-label="Quelle">
+      <option value="conf">Confluence</option>
+      <option value="sp">SharePoint</option>
+      <option value="drive">Netzlaufwerk</option>
+    </select>
+    <button class="btn-add" onclick="addDoc()">+ Hinzufügen</button>
+  </div>
+
+  <div class="hint-box">
+    💡 <strong>Confluence-Tipp:</strong> Seiten mit dem Label <code>prozess-[kurzname]</code> versehen (z.B. <code>prozess-immatrikulation</code>) → per «Content by Label»-Makro erscheinen sie automatisch auf der Prozessseite in Confluence.
+  </div>
+</div>
+
+<script>
+const PROCESSES = {
+  rechtsetzung:   { title:'Rechtsetzung & Studiengangentwicklung',   desc:'Verwaltung von Reglementen, Studienordnungen und Akkreditierungsunterlagen. Basis aller strukturellen Vorgaben für den Lehrbetrieb.',            docs:{conf:[],sp:[],drive:[]} },
+  lerneinheiten:  { title:'Lerneinheiten & Prüfungsinformationen',   desc:'Katalog aller Lerneinheiten, Modulbeschreibungen, Credit-Punkte und zugehörige Prüfungsvorschriften.',                                              docs:{conf:[],sp:[],drive:[]} },
+  stundenplanung: { title:'Stundenplanung & Vorlesungsverzeichnis',   desc:'Semesterkalender, Raumzuweisung, Veröffentlichung des Vorlesungsverzeichnisses.',                                                                    docs:{conf:[],sp:[],drive:[]} },
+  pruefungsplanung:{ title:'Prüfungsplanung & Organisation',         desc:'Koordination von Prüfungsterminen, Räumen, Aufsichten und Noteneingabe.',                                                                             docs:{conf:[],sp:[],drive:[]} },
+  zulassung:      { title:'Bewerbung & Zulassung (Phase A)',          desc:'Zweistufiges Zulassungsverfahren: formale Prüfung zentral durch die Zulassungsstelle, fachliche Prüfung durch das Departement.',                     docs:{conf:[],sp:[],drive:[]} },
+  immatrikulation:{ title:'Immatrikulation & Onboarding (Phase B)',   desc:'Einschreibung, Erstellung des digitalen Personaldossiers durch die Kanzlei, Semestergebühren.',                                                      docs:{conf:[],sp:[],drive:[]} },
+  studienbetrieb: { title:'Aktive Studienphase (Phase C)',            desc:'Belegung von Lerneinheiten, Prüfungsanmeldung, Leistungsnachweise, Mobilität, Stipendien und Schulgelderlasse.',                                     docs:{conf:[],sp:[],drive:[]} },
+  abschluss:      { title:'Abschluss & Austritt (Phase D)',           desc:'Abschlussarbeiten (Bachelor/Master/Doktorat), Notenberechnung, automatisierte Exmatrikulation, Archivierung und Alumni-Verwaltung.',                 docs:{conf:[],sp:[],drive:[]} },
+  raum:           { title:'Raumverwaltung',                           desc:'Verwaltung von Räumen (PO-01), Buchungen und Kapazitätsplanung in Abstimmung mit der zentralen Planung.',                                            docs:{conf:[],sp:[],drive:[]} },
+  dozierende:     { title:'Dozierendenverwaltung',                    desc:'Lehraufträge, Verträge und Verwaltung von Lehrbeteiligten (PO-02) durch die Departemente.',                                                          docs:{conf:[],sp:[],drive:[]} },
+  identitaet:     { title:'Identitäts- & Berechtigungsmanagement',   desc:'Zentrale Erfassung von Personen-IDs für Studierende, Dozierende und Gäste (DD-01/02) sowie Verknüpfung mit Rollen und Berechtigungen.',              docs:{conf:[],sp:[],drive:[]} },
+  daten:          { title:'Datenmanagement & Archivierung',           desc:'Historisierung aller akademischen Fälle, Erstellung von Statistiken (z.B. für das BFS) und Langzeitarchivierung.',                                   docs:{conf:[],sp:[],drive:[]} },
+  reporting:      { title:'Reporting & Statistik',                    desc:'Erstellung von Statistiken für das Bundesamt für Statistik, interne Dashboards und Qualitätssicherung.',                                              docs:{conf:[],sp:[],drive:[]} },
+  komm:           { title:'Systemkommunikation',                      desc:'Automatische Push-Nachrichten und E-Mails (DO-06) an Nutzende über Fristen, Statusänderungen und Prüfungsanmeldungen.',                              docs:{conf:[],sp:[],drive:[]} },
+  signaturen:     { title:'Digitale Signaturen & Bescheinigungen',    desc:'Einsatz von Verifiable Credentials (DD-03) für rechtssichere Dokumente wie Immatrikulationsbestätigungen und Diplome.',                              docs:{conf:[],sp:[],drive:[]} },
+  support:        { title:'Anwender-Support',                         desc:'Helpdesk, Schulungsunterlagen und FAQs für alle Nutzergruppen (Studierende, Dozierende, Administration).',                                            docs:{conf:[],sp:[],drive:[]} },
+};
+
+let activeKey = null;
+
+function kd(e, key) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(key); } }
+
+function toggle(key) {
+  const panel = document.getElementById('detail-panel');
+  if (activeKey === key && panel.classList.contains('open')) { closePanel(); return; }
+  document.querySelectorAll('.proc-card').forEach(c => c.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  activeKey = key;
+  renderPanel(key);
+  panel.classList.remove('open');
+  void panel.offsetWidth; // force reflow for animation replay
+  panel.classList.add('open');
+  setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
+}
+
+function closePanel() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.querySelectorAll('.proc-card').forEach(c => c.classList.remove('active'));
+  activeKey = null;
+}
+
+function renderPanel(key) {
+  const p = PROCESSES[key];
+  document.getElementById('dp-title').textContent = p.title;
+  document.getElementById('dp-desc').textContent  = p.desc;
+  renderList('dp-conf-list',  p.docs.conf,  'conf');
+  renderList('dp-sp-list',    p.docs.sp,    'sp');
+  renderList('dp-drive-list', p.docs.drive, 'drive');
+}
+
+function renderList(id, docs, src) {
+  const el = document.getElementById(id);
+  const labels = { conf:'Confluence', sp:'SharePoint', drive:'Netzlaufwerk' };
+  const cls    = { conf:'src-conf',   sp:'src-sp',     drive:'src-drive'    };
+  if (!docs.length) {
+    el.innerHTML = '<span class="empty-hint">Noch keine Einträge — oben hinzufügen.</span>';
+    return;
+  }
+  el.innerHTML = docs.map(d => {
+    const isUrl = d.startsWith('http');
+    const name  = isUrl ? (d.length > 45 ? d.slice(0,42)+'…' : d) : d;
+    const tag   = `<span class="source-tag ${cls[src]}">${labels[src]}</span>`;
+    if (isUrl) return `<a class="doc-item" href="${d}" target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="doc-name">${name}</span>${tag}</a>`;
+    return `<div class="doc-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="doc-name">${name}</span>${tag}</div>`;
+  }).join('');
+  updateCount(activeKey);
+}
+
+function addDoc() {
+  if (!activeKey) return;
+  const name = document.getElementById('new-doc-name').value.trim();
+  const src  = document.getElementById('new-doc-source').value;
+  if (!name) return;
+  PROCESSES[activeKey].docs[src].push(name);
+  document.getElementById('new-doc-name').value = '';
+  renderPanel(activeKey);
+  updateCount(activeKey);
+}
+
+function updateCount(key) {
+  if (!key) return;
+  const p = PROCESSES[key];
+  const n = p.docs.conf.length + p.docs.sp.length + p.docs.drive.length;
+  const el = document.getElementById('cnt-' + key);
+  if (el) el.textContent = n + (n === 1 ? ' Dokument' : ' Dokumente');
+}
+</script>
+</body>
+</html>
